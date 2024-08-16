@@ -68,26 +68,30 @@ def create_student(student: StudentCreate, db: Session = Depends(get_db),
     return db_student
 
 
-@app.put("/students/{student_id}", response_model=Student)
+@app.put("/students/update/{student_id}", response_model=Student)
 def update_student(student_id: int, student: StudentUpdate, db: Session = Depends(get_db),
                    credentials: HTTPBasicCredentials = Depends(security)):
     if not verify_credentials(credentials, db):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     db_student = db.query(models.Student).filter(models.Student.id == student_id).first()
+    if db_student is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     if db_student:
         for key, value in student.dict().items():
             setattr(db_student, key, value)
         db.commit()
         db.refresh(db_student)
         return db_student
-    return None
 
 
-@app.delete("/students/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/students/del/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_student(student_id: int, db: Session = Depends(get_db),
                    credentials: HTTPBasicCredentials = Depends(security)):
     if not verify_credentials(credentials, db):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    db_student = db.query(models.Student).filter(models.Student.id == student_id).first()
+    if db_student is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     db.query(models.Student).filter(models.Student.id == student_id).delete()
     db.commit()
     return {"message": "Student deleted"}
