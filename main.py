@@ -52,7 +52,7 @@ def get_db():
 
 @app.get("/")
 def root():
-    return {"test"}
+    return {"Welcome in Student Management API"}
 
 security = HTTPBasic
 
