@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 
 def verify_credentials(credentials: HTTPBasicCredentials, db: Session) -> bool:
-    # Implement your authentication logic here.
+    #No verify credentials right now
     return True
 
 app = FastAPI()
@@ -171,3 +171,166 @@ async def delete_pdf(student_id: int, filename: str, db: Session = Depends(get_d
     db.commit()
 
     return {"detail": "File and database entry deleted successfully"}
+
+#seeds
+def add_seeds(db: Session):
+    students = [
+        models.Student(
+            name="John",
+            surname="Doe",
+            email="john.doe@example.com",
+            field="Computer Science",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Jane",
+            surname="Smith",
+            email="jane.smith@example.com",
+            field="Mathematics",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Jan",
+            surname="Kowalski",
+            email="JanK@example.com",
+            field="Computer Science",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Maria",
+            surname="Nowak",
+            email="MNowak@example.com",
+            field="Mathematics",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Wiktor",
+            surname="Malinowski",
+            email="Malina_wik@example.com",
+            field="Physics",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Sarah",
+            surname="Johnson",
+            email="Sohnson@example.com",
+            field="Computer Science",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Jan",
+            surname="Dabrowski",
+            email="JanDabrowski@example.com",
+            field="Computer Science",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Andrzej",
+            surname="Grochowski",
+            email="a.grochowski@example.com",
+            field="Mathematics",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Tom",
+            surname="McCartan",
+            email="McTom@example.com",
+            field="Physics",
+            documents=[
+        ]
+        ),
+        models.Student(
+            name="Zygmunt",
+            surname="Waza",
+            email="zigi3@example.com",
+            field="Physics",
+            documents=[
+        ]
+        ),
+        models.Student(
+            name="Michael",
+            surname="Brown",
+            email="michael.brown@example.com",
+            field="Physics",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Emily",
+            surname="Johnson",
+            email="emily.johnson@example.com",
+            field="Biology",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="William",
+            surname="Davis",
+            email="william.davis@example.com",
+            field="Chemistry",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Olivia",
+            surname="Martinez",
+            email="olivia.martinez@example.com",
+            field="Psychology",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="James",
+            surname="Wilson",
+            email="james.wilson@example.com",
+            field="Engineering",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Sophia",
+            surname="Garcia",
+            email="sophia.garcia@example.com",
+            field="Architecture",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Henry",
+            surname="Miller",
+            email="henry.miller@example.com",
+            field="Literature",
+            documents=[
+            ]
+        ),
+        models.Student(
+            name="Ava",
+            surname="Taylor",
+            email="ava.taylor@example.com",
+            field="Economics",
+            documents=[
+            ]
+        ),
+    ]
+
+    db.add_all(students)
+    db.commit()
+
+def seed_database():
+    db = sessionLocal()
+    seed = int(os.getenv("SEED", 1))
+    if seed == 1:
+        try:
+            add_seeds(db)
+        finally:
+            db.close()
+seed_database()
+
