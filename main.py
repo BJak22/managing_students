@@ -1,24 +1,21 @@
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.exc import NoResultFound
-
+import secrets
 import models
 from database import engine, sessionLocal
 from sqlalchemy.orm import Session
 import os
-from typing import List, Optional
+from typing import List, Optional, Annotated
 import shutil
 from fastapi.responses import FileResponse
 
 #verify credentials
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 
-def verify_credentials(credentials: HTTPBasicCredentials, db: Session) -> bool:
-    #No verify credentials right now
-    return True
-
 app = FastAPI()
 models.base.metadata.create_all(bind=engine)
+security = HTTPBasic()
 
 class DocumentBase(BaseModel):
     student_id: int
@@ -50,16 +47,57 @@ def get_db():
     finally:
         db.close()
 
+def get_current_username(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+):
+    current_username_bytes = credentials.username.encode("utf8")
+    correct_username_bytes = b"admin"
+    is_correct_username = secrets.compare_digest(
+        current_username_bytes, correct_username_bytes
+    )
+    current_password_bytes = credentials.username.encode("utf8")
+    correct_password_bytes = b"admin"
+    is_correct_password = secrets.compare_digest(
+        current_password_bytes, correct_password_bytes
+    )
+    if not (is_correct_username and is_correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+
+def verify_credentials(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+):
+    current_username_bytes = credentials.username.encode("utf8")
+    correct_username_bytes = b"admin"
+    is_correct_username = secrets.compare_digest(
+        current_username_bytes, correct_username_bytes
+    )
+    current_password_bytes = credentials.username.encode("utf8")
+    correct_password_bytes = b"admin"
+    is_correct_password = secrets.compare_digest(
+        current_password_bytes, correct_password_bytes
+    )
+    if not (is_correct_username and is_correct_password):
+        return False
+    return True
+
+@app.get("/users/me")
+def read_current_user(username: Annotated[str, Depends(get_current_username)]):
+    return {"username": username}
+
 @app.get("/")
 def root():
     return {"Welcome in Student Management API"}
 
-security = HTTPBasic
-
 @app.post("/students/", response_model=Student)
 def create_student(student: StudentCreate, db: Session = Depends(get_db),
                    credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     db_student = models.Student(**student.dict())
     db.add(db_student)
@@ -71,7 +109,7 @@ def create_student(student: StudentCreate, db: Session = Depends(get_db),
 @app.put("/students/update/{student_id}", response_model=Student)
 def update_student(student_id: int, student: StudentUpdate, db: Session = Depends(get_db),
                    credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     db_student = db.query(models.Student).filter(models.Student.id == student_id).first()
     if db_student is None:
@@ -87,7 +125,7 @@ def update_student(student_id: int, student: StudentUpdate, db: Session = Depend
 @app.delete("/students/del/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_student(student_id: int, db: Session = Depends(get_db),
                    credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     db_student = db.query(models.Student).filter(models.Student.id == student_id).first()
     if db_student is None:
@@ -99,7 +137,7 @@ def delete_student(student_id: int, db: Session = Depends(get_db),
 
 @app.get("/students/", response_model=List[Student])
 def get_students(db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     return db.query(models.Student).all()
 
@@ -110,7 +148,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @app.post("/students/{student_id}/upload-pdf/")
 async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
                      credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file type. Only PDFs are allowed.")
@@ -135,7 +173,7 @@ async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session 
 @app.get("/get_pdf/{student_id}/{filename}")
 async def get_pdf(student_id: int, filename: str, db: Session = Depends(get_db),
                   credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     try:
@@ -153,7 +191,7 @@ async def get_pdf(student_id: int, filename: str, db: Session = Depends(get_db),
 @app.delete("/delete_pdf/")
 async def delete_pdf(student_id: int, filename: str, db: Session = Depends(get_db),
                      credentials: HTTPBasicCredentials = Depends(security)):
-    if not verify_credentials(credentials, db):
+    if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     file_path = os.path.join(UPLOAD_DIR, filename)
@@ -326,11 +364,12 @@ def add_seeds(db: Session):
 
 def seed_database():
     db = sessionLocal()
-    seed = int(os.getenv("SEED", 1))
+    seed = int(os.getenv("SEED", 0))
     if seed == 1:
         try:
             add_seeds(db)
         finally:
             db.close()
+
 seed_database()
 
