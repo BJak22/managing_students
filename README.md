@@ -16,12 +16,12 @@ docker run -e DB_USERNAME=root -e DB_HOST=host.docker.internal -e MAX_PDF_SIZE_M
 
 in the above line you need to change the environment variables so that they match your data.
 DB_USERNAME - your username on MySQL.
-DB_HOST - by default on docker it's host.docker.internal, but if you have changed it, type your host name there
-MAX_PDF_SIZE_MB=5 - there you can choose max size of pdf file
-DB_PASSWORD - your password to MySQL
-DB_PORT - Port on which MySQL is running (By deafult it is 3306)
-DB_NAME - name of database (if you created database using "CREATE SCHEMA studentManagement;" it would be StudentManagement)
-SEED - 1 if you want to fill the tables of database or 0 if you dont want to do that
+DB_HOST - by default on docker it's host.docker.internal, but if you have changed it, type your host name there.
+MAX_PDF_SIZE_MB=5 - there you can choose max size of pdf file.
+DB_PASSWORD - your password to MySQL.
+DB_PORT - Port on which MySQL is running (By deafult it is 3306).
+DB_NAME - name of database (if you created database using "CREATE SCHEMA studentManagement;" it would be StudentManagement).
+SEED - 1 if you want to fill the tables of database or 0 if you dont want to do that.
 
 You can also choose not to provide individual variables and then app will run with default values of those variables which are:
 DB_USERNAME - root
@@ -34,18 +34,30 @@ SEED - 0
 
 How to use app?
 
+
 open your browser and type localhost:8000
 
+
 Implemented endpoints:
+
 @app.get /users/me - use it to log in
+
 @app.get / - home page
+
 @app.get /students/ - use it to show all students from database
+
 @app.post /students/ - use it to create new student
+
 @app.put /students/update/{student_id} - use it to update data of student indicated by id
+
 @app.delete /students/del/{student_id} - use it to delete student indicated by id
+
 @app.post /students/{student_id}/upload-pdf/ - use it to upload pdf file to student indicated by id
+
 @app.get /get_pdf/{student_id}/{filename} - use it to downaload pdf file indicated by student_id and filename
+
 @app.delete /delete_pdf/ - use it to delete pdf file indicated by student_id and filename
+
 
 to test all of endpoint metioned above use: localhost:8000/docs
 
