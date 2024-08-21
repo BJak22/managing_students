@@ -154,6 +154,10 @@ async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session 
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="File must be a PDF")
 
+    existing_document = db.query(models.Document).filter_by( doc_name=file.filename).first()
+    if existing_document:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="A file with this name already exists")
     max_size_mb = int(os.getenv("MAX_PDF_SIZE_MB", 5))
     if file.size > max_size_mb * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File size exceeds limit.")
@@ -161,7 +165,6 @@ async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-
     db_document = models.Document(student_id=student_id, doc_name=file.filename)
     db.add(db_document)
     db.commit()

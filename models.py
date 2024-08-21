@@ -21,7 +21,7 @@ class Document(base):
 
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey('students.id'))  # Foreign Key setup
-    doc_name = Column(String(64))
+    doc_name = Column(String(64), unique= True)
 
     # Define the reverse relationship
     student = relationship('Student', back_populates='documents')
