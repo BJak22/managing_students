@@ -9,8 +9,6 @@ import os
 from typing import List, Optional, Annotated
 import shutil
 from fastapi.responses import FileResponse
-
-#verify credentials
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 
 app = FastAPI()
@@ -47,6 +45,7 @@ def get_db():
     finally:
         db.close()
 
+#verify credentials
 def get_current_username(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
 ):

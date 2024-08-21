@@ -4,6 +4,7 @@ import os
 
 db_username = os.getenv('DB_USERNAME', 'root')
 db_password = os.getenv('DB_PASSWORD', '')
+# DB_HOST for testing
 #db_host = os.getenv('DB_HOST', 'localhost')
 db_host = os.getenv('DB_HOST', 'host.docker.internal')
 db_port = os.getenv('DB_PORT', '3306')  # Domyślny port dla MySQL
