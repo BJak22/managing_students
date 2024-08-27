@@ -1,5 +1,17 @@
 Student Management
 
+1. Online website:
+
+How to use?
+
+Type "https://studentmanagement-351d129b0382.herokuapp.com/" in your browser.
+To test all implemented endpoints use "https://studentmanagement-351d129b0382.herokuapp.com/docs".
+Website is using public database, so I've seeded it already. I've added about 30 students to database and one pdf file (to student with id 39), but remember that it can change becouse website is public and everybody can edit published data.
+To use implemented enpoints you have to login by using: login: "admin", password:"admin"
+
+
+2. Server on local host:
+
 How to install?
 
 Download release of this GitHub repository, unpack it and then create docker image of it, by opening directory of repoitory using terminal and execute command: "docker build -t student-management ."
