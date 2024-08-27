@@ -1,3 +1,5 @@
+import pymysql
+pymysql.install_as_MySQLdb()
 import botocore
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File
 from pydantic import BaseModel
