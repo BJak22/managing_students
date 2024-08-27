@@ -17,13 +17,9 @@ import boto3
 
 #AWS S3 Configuration
 s3_bucket = os.getenv('S3_BUCKET', 'bjak22studentmanagementapibucket')
-#s3_bucket = 'bjak22studentmanagementapibucket'
 s3_region = os.getenv('S3_REGION', 'us-east-1')
-#s3_region = 'us-east-1'
 aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID', 'KEY')
-#aws_access_key_id = 'AKIAYM7PN65OG232CT2I'
 aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY', 'SECRET_KEY')
-#aws_secret_access_key = '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'
 s3_client = boto3.client(
     's3',
     region_name=s3_region,
