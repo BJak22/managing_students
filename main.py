@@ -1,3 +1,4 @@
+import botocore
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.exc import NoResultFound
@@ -13,10 +14,10 @@ from fastapi.security import HTTPBasicCredentials, HTTPBasic
 import boto3
 
 #AWS S3 Configuration
-s3_bucket = os.getenv('S3_BUCKET', 'bjak22studentmanagement')
+s3_bucket = os.getenv('S3_BUCKET', 'bjak22studentmanagementapibucket')
 s3_region = os.getenv('S3_REGION', 'us-east-1')
-aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID', 'AKIAYM7PN65OF55HABN6')
-aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY', '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')
+aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID', 'AKIAYM7PN65OG232CT2I')
+aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY', '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')
 s3_client = boto3.client(
     's3',
     region_name=s3_region,
@@ -196,7 +197,6 @@ async def get_pdf(student_id: int, filename: str, db: Session = Depends(get_db),
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Pobieranie pliku PDF z S3
     s3_key = f"uploads/{filename}"
     s3_url = s3_client.generate_presigned_url('get_object', Params={'Bucket': s3_bucket, 'Key': s3_key}, ExpiresIn=3600)
 
@@ -213,13 +213,20 @@ async def delete_pdf(student_id: int, filename: str, db: Session = Depends(get_d
         db_document = db.query(models.Document).filter_by(student_id=student_id, doc_name=filename).one()
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document not found in the database")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
 
-    # Usuń plik z S3
     s3_key = f"uploads/{filename}"
-    s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
+    try:
+        s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
+    except botocore.exceptions.ClientError as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting file from S3: {str(e)}")
 
-    db.delete(db_document)
-    db.commit()
+    try:
+        db.delete(db_document)
+        db.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting document from database: {str(e)}")
 
     return {"detail": "File and database entry deleted successfully"}
 
