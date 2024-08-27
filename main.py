@@ -10,6 +10,19 @@ from typing import List, Optional, Annotated
 import shutil
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
+import boto3
+
+#AWS S3 Configuration
+s3_bucket = os.getenv('S3_BUCKET', 'bjak22studentmanagement')
+s3_region = os.getenv('S3_REGION', ' us-east-1')
+aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID', 'AKIAYM7PN65OF55HABN6')
+aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY', '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')
+s3_client = boto3.client(
+    's3',
+    region_name=s3_region,
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key
+)
 
 app = FastAPI()
 models.base.metadata.create_all(bind=engine)
@@ -154,7 +167,7 @@ async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session 
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="File must be a PDF")
 
-    existing_document = db.query(models.Document).filter_by( doc_name=file.filename).first()
+    existing_document = db.query(models.Document).filter_by(doc_name=file.filename).first()
     if existing_document:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="A file with this name already exists")
@@ -162,9 +175,9 @@ async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session 
     if file.size > max_size_mb * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File size exceeds limit.")
 
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    s3_key = f"uploads/{file.filename}"
+    s3_client.upload_fileobj(file.file, s3_bucket, s3_key, ExtraArgs={"ContentType": "application/pdf"})
+
     db_document = models.Document(student_id=student_id, doc_name=file.filename)
     db.add(db_document)
     db.commit()
@@ -183,11 +196,11 @@ async def get_pdf(student_id: int, filename: str, db: Session = Depends(get_db),
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+    # Pobieranie pliku PDF z S3
+    s3_key = f"uploads/{filename}"
+    s3_url = s3_client.generate_presigned_url('get_object', Params={'Bucket': s3_bucket, 'Key': s3_key}, ExpiresIn=3600)
 
-    return FileResponse(file_path, media_type='application/pdf', filename=filename)
+    return {"url": s3_url}
 
 
 @app.delete("/delete_pdf/")
@@ -196,16 +209,14 @@ async def delete_pdf(student_id: int, filename: str, db: Session = Depends(get_d
     if not verify_credentials(credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    file_path = os.path.join(UPLOAD_DIR, filename)
-
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
     try:
         db_document = db.query(models.Document).filter_by(student_id=student_id, doc_name=filename).one()
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document not found in the database")
 
-    os.remove(file_path)
+    # Usuń plik z S3
+    s3_key = f"uploads/{filename}"
+    s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
 
     db.delete(db_document)
     db.commit()
