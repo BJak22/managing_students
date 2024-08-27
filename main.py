@@ -31,6 +31,8 @@ s3_client = boto3.client(
     aws_secret_access_key=aws_secret_access_key
 )
 
+#port = os.getenv("PORT", 8000)
+
 app = FastAPI()
 models.base.metadata.create_all(bind=engine)
 security = HTTPBasic()
