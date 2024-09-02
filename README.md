@@ -1,6 +1,6 @@
 Student Management
 
-1. Online website:
+1. Online website (online website has been closed):
 
 How to use?
 
