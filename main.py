@@ -162,7 +162,7 @@ def get_students(db: Session = Depends(get_db), credentials: HTTPBasicCredential
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.post("/students/{student_id}/upload-pdf/")
+@app.post("/students/{student_id}/upload-pdf")
 async def upload_pdf(student_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
                      credentials: HTTPBasicCredentials = Depends(security)):
     if not verify_credentials(credentials):
